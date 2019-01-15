@@ -1,88 +1,112 @@
 import matplotlib.pyplot as plt 
 import random
+import numpy as np
  
-dataSize= 100
-kCount  = 2
 
-# x-axis values 
-x = random.sample(range(dataSize), dataSize)
-#print x
-# y-axis values 
-y = random.sample(range(dataSize), dataSize)
-#print y
-# plotting points as a scatter plot 
-#plt.scatter(x, y, label= "stars", color= "green", marker= "*", s=30) 
+dataSize    = 500
+updLimits   = 100
 
+plt.ion()
+fig, ax = plt.subplots()
+
+sc = []
+retryFlag= [0] * kCount
 kx = random.sample(range(dataSize), kCount)
 ky = random.sample(range(dataSize), kCount)
-#plt.scatter(kx, ky, label= "stars", color= "black", marker= "x", s=50) 
 
-
-def Euclidean(kx,ky,x,y):
+def Euclidean(kCount,x,y):
     ss = []
     for i in range(kCount):
         s = []
         for j in range(dataSize):
-            #print "%d - %d / %d - %d" % (kx[i],x[j],ky[i],y[j])
             v = (kx[i]-x[j])**2 + (ky[i]-y[j])**2
             s.append(v)
 
         ss.append(s)
 
-    print ss
     return ss
 
-#'''
-def kSet(s):
-    r = []
+def kSet(kCount,s):
+    res = []
     for i in range(dataSize):
         tmp = []
         for j in range(kCount):
             tmp.append(s[j][i])
-            #if s[i][j] > s[i+1][j]:
-            #    r.append(i)
-            #else
-            #    r.append(i+1)
         m = min(tmp)
-        r.append(tmp.index(m))
+        res.append(tmp.index(m))
 
-    print r
-    return r
-#'''
+    return res
 
-def kSetView(k):
-    kColor = "black"
-    plt.scatter(kx, ky, label= "stars", color=kColor, marker="o", s=50) 
 
+def kSetCentroid(kCount,k):
+    colorSeed = 32
+    cmap = plt.cm.get_cmap("nipy_spectral", 256)
+
+    sumx = [0] * len(k)
+    sumy = [0] * len(k)
+    count= [0] * len(k)
     for i in range(len(k)):
-        if k[i] == 0:
-            kColor = "green"
+        plt.scatter(x[i], y[i], label="circle", color=cmap(k[i]*colorSeed), marker= "o", s=10) 
+
+        # kset sum
+        sumx[k[i]] += x[i]
+        sumy[k[i]] += y[i]
+        count[k[i]]+= 1
+
+    for i in range(kCount):
+        #if len(sc) != kCount :
+        res = ax.scatter(kx[i], ky[i], label="stars", color=cmap(i*colorSeed), marker="*", s=70)
+        sc.append(res)
+
+        # centroid campare
+        avgx = sumx[i] / count[i]
+        avgy = sumy[i] / count[i]
+        if kx[i]==avgx and ky[i]==avgy:
+            retryFlag[i] = 1
+            print "ref %d" % i
+
+        # next centroid
+        kx[i] = avgx
+        ky[i] = avgy
+
+
+def kmeans(kCount,x,y):
+    for i in range(updLimits):
+        sv = Euclidean(kCount,x,y)
+        kr = kSet(kCount,sv)
+        kSetCentroid(kCount,kr)
+        
+        trueCount = 0
+        for j in range(kCount):
+            if retryFlag[j] == 1: 
+                trueCount += 1
+
+        plt.pause(0.1)
+
+        if trueCount == kCount:
+            print "kset centroid complete !"
+            break
         else:
-            kColor = "blue"
+            print "retry kset-centroid...%d" % trueCount
+            ax.clear()
 
-        plt.scatter(x[i], y[i], label= "stars", color=kColor, marker= "*", s=30) 
-        print i
+        #reset centroid point
+        #fig.canvas.draw_idle()
+        #plt.draw() 
 
+    plt.waitforbuttonpress()
 
 if __name__ == "__main__":
 
-    #kInit()
-    
-    sv = Euclidean(kx,ky,x,y)
-    k = kSet(sv)
-    kSetView(k)
+    # cluster count
+    k = 5
 
-#'''
-    # x-axis label 
-    plt.xlabel('x - axis') 
-    # frequency label 
-    plt.ylabel('y - axis') 
-    # plot title 
-    plt.title('My scatter plot!') 
-    # showing legend 
-    #plt.legend() 
-    # function to show the plot 
-    plt.show() 
-#'''
+    # x, y coordinates
+    x = random.sample(range(dataSize), dataSize)
+    y = random.sample(range(dataSize), dataSize)
+
+    # run k-means
+    kmeans(k, x, y)
+    
 
 # End of File
