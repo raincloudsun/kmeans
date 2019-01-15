@@ -1,29 +1,21 @@
 import matplotlib.pyplot as plt 
 import random
 import numpy as np
- 
+
+plt.ion()
+flg, ax = plt.subplots()
 
 dataSize    = 500
 updLimits   = 100
 
-plt.ion()
-fig, ax = plt.subplots()
-
-sc = []
-retryFlag= [0] * kCount
-kx = random.sample(range(dataSize), kCount)
-ky = random.sample(range(dataSize), kCount)
-
-def Euclidean(kCount,x,y):
+def Euclidean(kCount,kx,ky,x,y):
     ss = []
     for i in range(kCount):
         s = []
         for j in range(dataSize):
             v = (kx[i]-x[j])**2 + (ky[i]-y[j])**2
             s.append(v)
-
         ss.append(s)
-
     return ss
 
 def kSet(kCount,s):
@@ -38,15 +30,17 @@ def kSet(kCount,s):
     return res
 
 
-def kSetCentroid(kCount,k):
-    colorSeed = 32
+def kSetCentroid(kCount,kx,ky,x,y,k):
+    colorSeed = 30
     cmap = plt.cm.get_cmap("nipy_spectral", 256)
 
     sumx = [0] * len(k)
     sumy = [0] * len(k)
     count= [0] * len(k)
+    retryFlag= [0] * kCount
+
     for i in range(len(k)):
-        plt.scatter(x[i], y[i], label="circle", color=cmap(k[i]*colorSeed), marker= "o", s=10) 
+        plt.scatter(x[i], y[i], label="circle", color=cmap(k[i]*colorSeed), marker= ".", s=30) 
 
         # kset sum
         sumx[k[i]] += x[i]
@@ -54,31 +48,33 @@ def kSetCentroid(kCount,k):
         count[k[i]]+= 1
 
     for i in range(kCount):
-        #if len(sc) != kCount :
-        res = ax.scatter(kx[i], ky[i], label="stars", color=cmap(i*colorSeed), marker="*", s=70)
-        sc.append(res)
+        ax.scatter(kx[i], ky[i], label="stars", color=cmap(i*colorSeed), marker="^", s=100)
 
         # centroid campare
         avgx = sumx[i] / count[i]
         avgy = sumy[i] / count[i]
         if kx[i]==avgx and ky[i]==avgy:
             retryFlag[i] = 1
-            print "ref %d" % i
 
         # next centroid
         kx[i] = avgx
         ky[i] = avgy
 
+    return retryFlag
+
 
 def kmeans(kCount,x,y):
+    kx = random.sample(range(dataSize), kCount)
+    ky = random.sample(range(dataSize), kCount)
+
     for i in range(updLimits):
-        sv = Euclidean(kCount,x,y)
+        sv = Euclidean(kCount,kx,ky,x,y)
         kr = kSet(kCount,sv)
-        kSetCentroid(kCount,kr)
-        
+        ret= kSetCentroid(kCount,kx,ky,x,y,kr)
+
         trueCount = 0
         for j in range(kCount):
-            if retryFlag[j] == 1: 
+            if ret[j] == 1: 
                 trueCount += 1
 
         plt.pause(0.1)
@@ -91,7 +87,6 @@ def kmeans(kCount,x,y):
             ax.clear()
 
         #reset centroid point
-        #fig.canvas.draw_idle()
         #plt.draw() 
 
     plt.waitforbuttonpress()
@@ -99,7 +94,7 @@ def kmeans(kCount,x,y):
 if __name__ == "__main__":
 
     # cluster count
-    k = 5
+    k = 8
 
     # x, y coordinates
     x = random.sample(range(dataSize), dataSize)
